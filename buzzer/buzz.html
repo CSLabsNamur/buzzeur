@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <style>
+            
+        </style>
+        <script src="ressources/jquery-3.1.1.min.js"></script>
+        <script src="ressources/popper.min.js"></script>
+        <script src="ressources/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="ressources/bootstrap.min.css">
+    </head>
+    <body>
+        <div class="container" style="text-align: center; font-size: 40px">
+            Date: <span id="date"></span><br>
+            Équipe: <span id="pseudo"></span>
+        </div>
+        <br><br><br><br>
+        <div class="container">
+            Historique:<br>
+            <ul id="history">
+            
+            </ul>
+        </div>
+        
+        <script>
+            
+            var old_resp = "";
+            function update(){
+                $.get("buzz.php?status", function(data){
+                    if(data != "" && data != old_resp)
+                        $("#history").prepend("<li>"+(new Date()).toGMTString() + "   "+data+"</li>");
+                    $("#pseudo").text(data);
+                    $("#date").text((new Date()).toGMTString());
+                    old_resp = data;
+                });
+            }
+            setInterval(update, 300);
+            update();
+        </script>
+    </body>
+</html>

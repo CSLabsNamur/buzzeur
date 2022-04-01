@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no">
+
+        <style>
+            
+        </style>
+        <script src="ressources/jquery-3.1.1.min.js"></script>
+        <script src="ressources/popper.min.js"></script>
+        <script src="ressources/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="ressources/bootstrap.min.css">
+    </head>
+    <body>
+        <div style="display: none">
+            <audio src="ressources/beep.mp3" id="beep"/>
+        </div>
+        
+        <button id="reset" type="button" class="btn btn-danger btn-sm" style="">Reset nom équipe</button>
+        <br><br><br><br><br>
+        
+        <div class="container" style="text-align: center;">
+        
+            <div id="nom_equipe_show" style="display: none;">
+                Équipe: <span id="nom_equipe_data"></span>
+            </div>
+            
+            <div id="div_buzzer" style="display: none;">
+                <button id="buzzer" type="button" class="btn btn-primary btn-lg" style="font-size: 50px;">Buzz!</button>
+                <p id="buzzer_time_left"></p>
+            </div>
+            
+            <div id="ask_pseudo"  style="display: none;">
+                
+                <div class="form-group">
+                    <label for="exampleInputEmail1">Équipe:</label>
+                    <input type="text" class="form-control" id="pseudo">
+                </div>
+                <button type="submit" class="btn btn-primary" id="send_pseudo">Submit</button>
+            </div>
+        </div>
+        
+        <script>
+            var const_reload_time = 5; //5 secondes
+            var buzz_time = 4; //5 secondes
+            var beep = $("#beep").get(0);
+            
+            var pseudo_equipe = null;
+            if(localStorage.getItem("pseudo_equipe")!=null) {
+                pseudo_equipe = localStorage.getItem("pseudo_equipe");
+                $("#div_buzzer").show();
+                $("#nom_equipe_show").show().children("span").text(pseudo_equipe);
+            } else {
+                $("#ask_pseudo").show();
+            }
+            $("#send_pseudo").click(function(){
+                var val = $("#pseudo").val();
+                if(val.length<3) {
+                    alert("Nom trop court");
+                    return;
+                }
+                if(confirm("Confirmer le nom de l'équipe: "+val)) {
+                    window.pseudo_equie = val;
+                    $("#ask_pseudo").hide();
+                    $("#div_buzzer").show();
+                    $("#nom_equipe_show").show().children("span").text(val);
+                    localStorage.setItem("pseudo_equipe", val);
+                }
+            });
+            $("#reset").click(function(){
+                if(confirm("Reset du nom de l'équipe ?")) {
+                    localStorage.removeItem("pseudo_equipe");
+                    window.location.reload();
+                }
+            });
+            
+            var status = "waiting"; // waiting, speaking, reloading
+            var time_left = 0;
+            
+            setInterval(function(){
+                $("#buzzer_time_left").show().text("Temps restant: "+(parseInt(time_left)+1));
+                if(time_left<=0) {
+                    time_left = 0;
+                    $("#buzzer_time_left").hide();
+                } else {
+                    time_left -= 0.1;
+                    
+                    if(time_left<0.05) {
+                        time_left = 0;
+                        if(status=="speaking") {
+                            status = "reloading";
+                            time_left = const_reload_time;
+                            $("#buzzer")
+                                .removeClass("btn-warning").removeClass("btn-primary")
+                                .addClass("btn-secondary");
+                            $("html, body").css("background-color", "#6c757d");
+                            beep.play();
+                        } else { //reloading
+                            status = "waiting";
+                            $("#buzzer")
+                                .removeClass("btn-warning").removeClass("btn-secondary")
+                                .addClass("btn-primary");
+                            $("html, body").css("background-color", "#fff");
+                        }
+                    }
+                }
+            }, 100);
+            
+            function buzz() {
+                $("#buzzer").removeClass("btn-primary").removeClass("brn-secondary").addClass("btn-warning");
+                $("html, body").css("background-color", "#e0a800");
+                time_left = parseFloat(buzz_time);
+                status = "speaking";
+            }
+            
+            //Buzz!
+            $("#buzzer").click(function(){
+                if(status != "waiting")
+                    return;
+                $.get("buzz.php?pseudo="+encodeURIComponent(window.pseudo_equipe), function(rep){
+                    if(rep=="OK") {
+                        buzz();
+                        beep.play();
+                    } else {
+                        time_left = (1000*(buzz_time+1) - (Date.now() - parseInt(rep)*1000))/1000;
+                        if(time_left>0.05) {
+                            status = "reloading";
+                            $("#buzzer")
+                                    .removeClass("btn-warning").removeClass("btn-primary")
+                                    .addClass("btn-secondary");
+                            $("html, body").css("background-color", "#6c757d");
+                        }
+                    }
+                });
+            });
+        
+        </script>
+        
+    </body>
+</html>
